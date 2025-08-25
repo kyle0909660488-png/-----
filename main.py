@@ -191,7 +191,7 @@ class Ball:
             # 確保球不會卡在底板裡
             self.y = paddle.rect.top - self.radius
 
-    def check_brick_collision(self, brick_wall):
+    def check_brick_collision(self, brick_wall, paddle=None, shrink_by=5):
         """檢查球與磚塊的碰撞"""
         for brick in brick_wall.bricks:
             if not brick["is_hit"] and self.rect.colliderect(brick["rect"]):
@@ -213,6 +213,25 @@ class Ball:
                 else:
                     # 上下邊碰撞
                     self.y_speed = -self.y_speed
+
+                # 如果有傳入 paddle，則在每次擊中磚塊時縮小底板寬度（但不小於 20）
+                if paddle is not None:
+                    try:
+                        # 保留原本中心，使縮小時位置不會跳動
+                        old_centerx = paddle.rect.centerx
+                        # 逐次減少固定像素（預設 shrink_by=5）
+                        # 變更：最小允許寬度為 40
+                        new_width = max(40, int(paddle.width - shrink_by))
+                        paddle.width = new_width
+                        paddle.rect.width = new_width
+                        # 重新以原中心置中，並夾在視窗內
+                        paddle.rect.centerx = old_centerx
+                        paddle.rect.x = max(
+                            0, min(paddle.rect.x, paddle.screen_width - paddle.width)
+                        )
+                    except Exception:
+                        # 若 paddle 物件結構不符，忽略縮小動作
+                        pass
 
                 return True  # 有碰撞發生
         return False  # 沒有碰撞
@@ -377,7 +396,7 @@ while True:
     ball.check_wall_collision()
     ball.check_paddle_collision(paddle)
     # 若有擊中磚塊，增加分數（每塊 10 分）
-    if ball.check_brick_collision(brick_wall):
+    if ball.check_brick_collision(brick_wall, paddle=paddle, shrink_by=5):
         score += 10
 
     # 填充背景色
