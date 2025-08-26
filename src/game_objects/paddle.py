@@ -23,18 +23,16 @@ class Paddle:
         min_width=40,
     ):
         """
-        初始化底板
-
-        Args:
-            brick_width (int): 磚塊寬度（用作寬度基準）
-            width_multiplier (float): 寬度倍數
-            height (int): 底板高度
-            y_offset (int): 距離螢幕底部的距離
-            color (tuple): 底板顏色，若為 None 則使用預設顏色
-            screen_width (int): 螢幕寬度
-            screen_height (int): 螢幕高度
-            shrink_amount (int): 每次縮小的像素數
-            min_width (int): 最小寬度
+        初始化底板\n
+        brick_width: 磚塊寬度（用作寬度基準）\n
+        width_multiplier: 寬度倍數\n
+        height: 底板高度\n
+        y_offset: 距離螢幕底部的距離\n
+        color: 底板顏色，若為 None 則使用預設顏色\n
+        screen_width: 螢幕寬度\n
+        screen_height: 螢幕高度\n
+        shrink_amount: 每次縮小的像素數\n
+        min_width: 最小寬度\n
         """
         self.brick_width = brick_width
         self.width = int(brick_width * width_multiplier)
@@ -76,12 +74,8 @@ class Paddle:
 
     def get_hit_factor(self, ball_x):
         """
-        計算球撞擊底板的相對位置（用於改變反彈角度）
-
-        Args:
-            ball_x (float): 球的 x 座標
-
-        Returns:
-            float: -1 到 1 之間的值，表示撞擊位置
+        計算球撞擊底板的相對位置（用於改變反彈角度）\n
+        ball_x: 球的 x 座標\n
+        return: -1 到 1 之間的值，表示撞擊位置\n
         """
         return (ball_x - self.rect.centerx) / (self.width / 2)

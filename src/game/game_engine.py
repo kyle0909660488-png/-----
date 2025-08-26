@@ -17,10 +17,8 @@ class GameEngine:
 
     def __init__(self, config):
         """
-        初始化遊戲引擎
-
-        Args:
-            config: 設定模組物件
+        初始化遊戲引擎\n
+        config: 設定模組物件\n
         """
         self.config = config
         self.clock = pygame.time.Clock()
@@ -105,12 +103,12 @@ class GameEngine:
 
             # 按 E 鍵在勝利後開始下一輪
             if event.type == pygame.KEYDOWN:
-                is_e_pressed = event.key == pygame.K_e or (
+                is_e_key_pressed = event.key == pygame.K_e or (
                     hasattr(event, "unicode")
                     and event.unicode
                     and event.unicode.lower() == "e"
                 )
-                if is_e_pressed and self.game_state.is_win():
+                if is_e_key_pressed and self.game_state.is_win():
                     self.init_game_objects()
 
         return True
@@ -138,10 +136,10 @@ class GameEngine:
         self.ball.check_paddle_collision(self.paddle)
 
         # 磚塊碰撞
-        is_hit, hit_count, collision_direction = self.brick_wall.check_collision(
-            self.ball.rect
+        is_collision_hit, hit_count, collision_direction = (
+            self.brick_wall.check_collision(self.ball.rect)
         )
-        if is_hit:
+        if is_collision_hit:
             # 增加分數
             self.game_state.add_score(self.config.SCORE_PER_BRICK * hit_count)
 

@@ -23,15 +23,13 @@ class Ball:
         follow_distance=5,
     ):
         """
-        初始化球
-
-        Args:
-            x, y (float): 初始位置
-            radius (int): 球的半徑
-            color (tuple): 球的顏色，若為 None 則使用預設顏色
-            x_speed, y_speed (float): 水平和垂直速度
-            screen_width, screen_height (int): 螢幕尺寸
-            follow_distance (int): 跟隨底板時的距離
+        初始化球\n
+        x, y: 初始位置\n
+        radius: 球的半徑\n
+        color: 球的顏色，若為 None 則使用預設顏色\n
+        x_speed, y_speed: 水平和垂直速度\n
+        screen_width, screen_height: 螢幕尺寸\n
+        follow_distance: 跟隨底板時的距離\n
         """
         self.x = x
         self.y = y
@@ -79,13 +77,9 @@ class Ball:
 
     def check_paddle_collision(self, paddle):
         """
-        檢查球與底板的碰撞
-
-        Args:
-            paddle: 底板物件
-
-        Returns:
-            bool: 是否發生碰撞
+        檢查球與底板的碰撞\n
+        paddle: 底板物件\n
+        return: 是否發生碰撞\n
         """
         if self.rect.colliderect(paddle.rect) and self.y_speed > 0:
             # 計算球撞擊底板的相對位置
@@ -126,11 +120,9 @@ class Ball:
 
     def reset(self, x=None, y=None, paddle=None):
         """
-        重置球的位置和狀態
-
-        Args:
-            x, y (float): 新位置，若為 None 則使用預設值或跟隨底板
-            paddle: 底板物件，用於自動定位
+        重置球的位置和狀態\n
+        x, y: 新位置，若為 None 則使用預設值或跟隨底板\n
+        paddle: 底板物件，用於自動定位\n
         """
         if paddle and x is None and y is None:
             # 自動跟隨底板位置

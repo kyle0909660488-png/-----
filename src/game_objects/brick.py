@@ -28,17 +28,15 @@ class Brick:
         special_count=7,
     ):
         """
-        產生一整面磚牆（cols x rows）並自動置中
-
-        Args:
-            cols (int): 磚塊欄數
-            rows (int): 磚塊列數
-            brick_width (int): 磚塊寬度
-            brick_height (int): 磚塊高度
-            padding (int): 磚塊間距
-            top_margin (int): 磚牆上方邊距
-            screen_width (int): 螢幕寬度（用於置中計算）
-            special_count (int): 特殊爆炸磚塊數量
+        產生一整面磚牆（cols x rows）並自動置中\n
+        cols: 磚塊欄數\n
+        rows: 磚塊列數\n
+        brick_width: 磚塊寬度\n
+        brick_height: 磚塊高度\n
+        padding: 磚塊間距\n
+        top_margin: 磚牆上方邊距\n
+        screen_width: 螢幕寬度（用於置中計算）\n
+        special_count: 特殊爆炸磚塊數量\n
         """
         self.cols = cols
         self.rows = rows
@@ -117,16 +115,12 @@ class Brick:
 
     def check_collision(self, ball_rect):
         """
-        檢查球與磚塊的碰撞
-
-        Args:
-            ball_rect (pygame.Rect): 球的碰撞矩形
-
-        Returns:
-            tuple: (is_hit, hit_count, collision_direction)
-                   is_hit: 是否有碰撞
-                   hit_count: 被擊中的磚塊數量（包含爆炸連帶）
-                   collision_direction: 碰撞方向 ('horizontal' 或 'vertical')
+        檢查球與磚塊的碰撞\n
+        ball_rect: 球的碰撞矩形\n
+        return: (is_hit, hit_count, collision_direction)\n
+               is_hit: 是否有碰撞\n
+               hit_count: 被擊中的磚塊數量（包含爆炸連帶）\n
+               collision_direction: 碰撞方向 ('horizontal' 或 'vertical')\n
         """
         for brick in self.bricks:
             if not brick["is_hit"] and ball_rect.colliderect(brick["rect"]):
