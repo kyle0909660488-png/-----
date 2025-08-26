@@ -1,6 +1,7 @@
 ######################載入套件######################
 import pygame
 import sys
+import random
 
 
 ######################物件類別######################
@@ -50,6 +51,7 @@ class Brick:
         ]
 
         # 建立每個磚塊的資料結構
+        # 我們也會記錄 row/col 以利爆炸擴散判斷，並標記部分為特殊磚塊
         self.bricks = []
         for row in range(rows):
             for col in range(cols):
@@ -62,14 +64,51 @@ class Brick:
                         "rect": pygame.Rect(x, y, brick_width, brick_height),
                         "color": color,
                         "is_hit": False,
+                        "row": row,
+                        "col": col,
+                        "is_special": False,  # 特殊炸裂磚塊標記
                     }
                 )
+
+        # 每局隨機挑選最多 7 個特殊磚塊（若磚塊總數小於 7，則全部可能被選中）
+        special_count = min(7, len(self.bricks))
+        special_indices = random.sample(range(len(self.bricks)), k=special_count)
+        for idx in special_indices:
+            self.bricks[idx]["is_special"] = True
 
     def draw(self, screen):
         """繪製整面磚牆（未被擊中的磚塊才繪製）。"""
         for b in self.bricks:
             if not b["is_hit"]:
+                # 繪製磚塊本體
                 pygame.draw.rect(screen, b["color"], b["rect"])
+
+                # 若為特殊磚塊，使用更明顯且易辨識的標示：
+                # - 會閃爍的外框（每 300ms 切換顏色）
+                # - 在磚塊中央顯示中文字『爆』以明確傳達功能
+                if b.get("is_special", False):
+                    # 閃爍效果（以時間分段切換顏色）
+                    tick = pygame.time.get_ticks()
+                    phase = (tick // 300) % 2
+                    outline_color = (255, 69, 0) if phase == 0 else (255, 215, 0)
+                    # 畫較粗的外框讓玩家容易注意到
+                    pygame.draw.rect(screen, outline_color, b["rect"], 3)
+
+                    # 嘗試畫中文字 "爆" 在磚塊中央（使用專用的中文字型載入器）
+                    try:
+                        # 選擇合適大小，確保在磚塊內可見
+                        font_size = max(12, int(min(b["rect"].height * 0.9, 24)))
+                        font = load_chinese_font(font_size)
+                        # 根據磚塊顏色決定文字顏色（深色磚塊用白字，淺色用黑字）
+                        r, g, bl = b["color"]
+                        brightness = (r + g + bl) / 3
+                        text_color = (255, 255, 255) if brightness < 140 else (0, 0, 0)
+                        text_surf = font.render("爆", True, text_color)
+                        text_rect = text_surf.get_rect(center=b["rect"].center)
+                        screen.blit(text_surf, text_rect)
+                    except Exception:
+                        # 若字型或繪製失敗，保留外框作為標示
+                        pass
 
 
 class Paddle:
@@ -193,48 +232,52 @@ class Ball:
 
     def check_brick_collision(self, brick_wall, paddle=None, shrink_by=5):
         """檢查球與磚塊的碰撞"""
-        for brick in brick_wall.bricks:
+        # 回傳數字：被擊中的磚塊數量（包含爆炸連帶刪除）
+        for i, brick in enumerate(brick_wall.bricks):
             if not brick["is_hit"] and self.rect.colliderect(brick["rect"]):
-                # 標記磚塊已被擊中
+                # 先標記這顆磚塊已被擊中
                 brick["is_hit"] = True
+                hits = 1
 
-                # 判斷碰撞方向並反彈
+                # 若為特殊磚塊，則炸掉周圍 8 格（包含自己已標記）
+                if brick.get("is_special", False):
+                    r0 = brick["row"]
+                    c0 = brick["col"]
+                    for b in brick_wall.bricks:
+                        if not b["is_hit"]:
+                            if abs(b["row"] - r0) <= 1 and abs(b["col"] - c0) <= 1:
+                                b["is_hit"] = True
+                                hits += 1
+
+                # 判斷碰撞方向並反彈（以原本磚塊中心判斷）
                 brick_center_x = brick["rect"].centerx
                 brick_center_y = brick["rect"].centery
 
-                # 計算球心與磚塊中心的距離
                 dx = abs(self.x - brick_center_x)
                 dy = abs(self.y - brick_center_y)
 
-                # 根據碰撞位置決定反彈方向
                 if dx / (brick["rect"].width / 2) > dy / (brick["rect"].height / 2):
-                    # 左右邊碰撞
                     self.x_speed = -self.x_speed
                 else:
-                    # 上下邊碰撞
                     self.y_speed = -self.y_speed
 
-                # 如果有傳入 paddle，則在每次擊中磚塊時縮小底板寬度（但不小於 20）
+                # 如果有傳入 paddle，則在每次擊中（事件）時縮小底板寬度一次
                 if paddle is not None:
                     try:
-                        # 保留原本中心，使縮小時位置不會跳動
                         old_centerx = paddle.rect.centerx
-                        # 逐次減少固定像素（預設 shrink_by=5）
-                        # 變更：最小允許寬度為 40
                         new_width = max(40, int(paddle.width - shrink_by))
                         paddle.width = new_width
                         paddle.rect.width = new_width
-                        # 重新以原中心置中，並夾在視窗內
                         paddle.rect.centerx = old_centerx
                         paddle.rect.x = max(
                             0, min(paddle.rect.x, paddle.screen_width - paddle.width)
                         )
                     except Exception:
-                        # 若 paddle 物件結構不符，忽略縮小動作
                         pass
 
-                return True  # 有碰撞發生
-        return False  # 沒有碰撞
+                return hits
+
+        return 0
 
     def is_out_of_bounds(self):
         """檢查球是否掉出螢幕下方"""
@@ -338,6 +381,9 @@ score_font = load_chinese_font(28)
 info_font = load_chinese_font(16)
 text_padding = 10  # 從視窗邊緣的距離
 
+# 勝利旗標（當所有磚塊被擊中時為 True）
+win = False
+
 ######################底板設定######################
 
 ######################球設定######################
@@ -377,12 +423,53 @@ while True:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE and not ball.started:
                 ball.start()  # 開始發球
+            # 按 E 鍵在勝利後開始下一輪
+            # 有些系統/鍵盤佈局可能會讓 event.key 不是預期的值，
+            # 因此也檢查 event.unicode 以兼容大寫/小寫與不同佈局。
+            is_e_pressed = event.key == pygame.K_e or (
+                hasattr(event, "unicode")
+                and event.unicode
+                and event.unicode.lower() == "e"
+            )
+            if is_e_pressed and win:
+                # 重新建立磚牆、底板與球，並重置分數與勝利旗標
+                brick_wall = Brick(
+                    cols=10,
+                    rows=5,
+                    brick_width=60,
+                    brick_height=20,
+                    padding=6,
+                    top_margin=50,
+                    screen_width=width,
+                )
+                paddle = Paddle(
+                    brick_wall,
+                    width_multiplier=2.5,
+                    height=14,
+                    y_offset=40,
+                    screen_width=width,
+                    screen_height=height,
+                )
+                ball = Ball(
+                    x=width // 2,
+                    y=height - 60,
+                    radius=8,
+                    color=(255, 255, 255),
+                    x_speed=7,
+                    y_speed=-7,
+                    screen_width=width,
+                    screen_height=height,
+                    started=False,
+                )
+                score = 0
+                win = False
 
     # 更新遊戲物件
     paddle.update()
 
-    # 如果球尚未發射，讓球跟隨底板移動
-    ball.follow_paddle(paddle)
+    # 如果球尚未發射且尚未勝利，讓球跟隨底板移動（勝利時暫停場上物件）
+    if not ball.started and not win:
+        ball.follow_paddle(paddle)
 
     # 更新球的位置
     ball.move()
@@ -396,8 +483,19 @@ while True:
     ball.check_wall_collision()
     ball.check_paddle_collision(paddle)
     # 若有擊中磚塊，增加分數（每塊 10 分）
-    if ball.check_brick_collision(brick_wall, paddle=paddle, shrink_by=5):
-        score += 10
+    hits = ball.check_brick_collision(brick_wall, paddle=paddle, shrink_by=5)
+    if hits > 0:
+        score += 10 * hits
+
+    # 檢查是否全部磚塊被擊中
+    remaining = sum(1 for b in brick_wall.bricks if not b["is_hit"])
+    if remaining == 0:
+        win = True
+        # 暫停球的移動並保持目前位置，避免在勝利畫面仍然移動
+        try:
+            ball.started = False
+        except Exception:
+            pass
 
     # 填充背景色
     screen.fill((0, 0, 0))  # 黑色背景
@@ -423,6 +521,17 @@ while True:
         topright=(width - text_padding, score_rect.bottom + 6)
     )
     screen.blit(info_surf, info_rect)
+
+    # 若勝利，繪製勝利訊息並提示玩家按 E 繼續
+    if win:
+        win_font = load_chinese_font(48)
+        win_surf = win_font.render("你贏了", True, (255, 255, 255))
+        win_rect = win_surf.get_rect(center=(width // 2, height // 2 - 20))
+        screen.blit(win_surf, win_rect)
+
+        next_surf = info_font.render("按 E 開始下一輪", True, (200, 200, 200))
+        next_rect = next_surf.get_rect(center=(width // 2, height // 2 + 30))
+        screen.blit(next_surf, next_rect)
 
     # 更新視窗
     pygame.display.update()
